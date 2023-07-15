@@ -8,8 +8,6 @@ obs_bucketname = os.getenv("OBS_BUCKETNAME")
 obs_endpoint = os.getenv("OBS_ENDPOINT")
 
 
-
-
 class OBSHandler:
     def __init__(self):
         self.access_key = obs_ak
@@ -39,7 +37,8 @@ class OBSHandler:
         :return:
         """
         try:
-            resp = self.obsClient.getObject(self.bucket_name, path, loadStreamInMemory=True)
+            resp = self.obsClient.getObject(
+                self.bucket_name, path, loadStreamInMemory=True)
             if resp.status < 300:
                 # 获取对象内容
                 return {
