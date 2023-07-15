@@ -1,6 +1,7 @@
 import os
 import pathlib
 import zipfile
+import psutil
 
 import numpy as np
 import torchvision.transforms as TF
@@ -48,6 +49,81 @@ def parse_args():
 
 
 args_opt = parse_args()
+
+
+class SafeUnZip:
+    # 限制解压后大小不能超过1G，文件个数不能超过1,000,000
+    MAX_SIZE = 1 * 1024 * 1024 * 1024
+    MAX_FILE_CNT = 1000001
+
+    @staticmethod
+    def recode(raw: str) -> str:
+        """ 编码纠正 """
+        try:
+            return raw.encode('cp437').decode('gbk')
+        except:
+            return raw.encode('utf-8').decode('utf-8')
+
+    @staticmethod
+    def extract(file, dest_dir):
+        # 遍历压缩包内所有内容
+        for file_or_path in file.namelist():
+            if file_or_path.endswith('/'):
+                try:
+                    os.makedirs(os.path.join(
+                        dest_dir, SafeUnZip.recode(file_or_path)))
+                except FileExistsError:
+                    pass
+            else:
+                with open(os.path.join(dest_dir, SafeUnZip.recode(file_or_path)), 'wb') as z:
+                    shutil.copyfileobj(file.open(file_or_path), z)
+
+    @staticmethod
+    def checkpath(path, zip_file):
+        # 检查点：检查路径合法性，尽量避免相对路径，通过..越界到非法文件夹下
+        file_path = os.path.join(path, zip_file)
+
+        file_path = os.path.realpath(file_path)
+        if not file_path.startswith("/opt/app"):
+            raise Exception(
+                "illegal model path, upload path must be below /opt/app")
+        return file_path
+
+    @staticmethod
+    def check(src_file, zip_file):
+        # 检查点1： 检查文件个数，文件个数大于预期值时上报异常退出
+        file_count = len(src_file.infolist())
+        if file_count >= SafeUnZip.MAX_FILE_CNT:
+            raise IOError(
+                f"zipfile({zip_file}) contains {file_count} files exceed max file count({SafeUnZip.MAX_FILE_CNT})")
+
+        # 检查点2: 检查第一层解压文件总大小，总大小超过设定的上限值
+        total_size = sum(info.file_size for info in src_file.infolist())
+        if total_size >= SafeUnZip.MAX_SIZE:
+            raise IOError(
+                f"zipfile({zip_file}) size({total_size}) exceed max limit({SafeUnZip.MAX_SIZE})")
+
+        # 检查点3：检查第一层解压文件总大小，总大小超过磁盘剩余空间
+        dest_dir_partition = "/"
+        dest_dir_partition_free = psutil.disk_usage(dest_dir_partition).free
+        if total_size >= dest_dir_partition_free:
+            raise IOError(
+                f"zipfile({zip_file}) size({total_size}) exceed remain target disk space({dest_dir_partition_free})")
+
+    @staticmethod
+    def unzip(path, zip_file):
+        # 检查路径合法性，尽量避免相对路径，通过..越界到非法文件夹下
+        file_path = SafeUnZip.checkpath(path, zip_file)
+
+        dest_dir = path
+        src_file = zipfile.ZipFile(file_path, "r")
+
+        # 检查
+        SafeUnZip.check(src_file, zip_file)
+
+        # 所有检查通过之后，解压所有文件
+        SafeUnZip.extract(src_file, dest_dir)
+        src_file.close()
 
 
 class InceptionV3(nn.Module):
@@ -111,8 +187,8 @@ class InceptionV3(nn.Module):
         self.last_needed_block = max(output_blocks)
         self.weights_path = weights_path
 
-        assert self.last_needed_block <= 3, \
-            'Last possible output block index is 3'
+        if self.last_needed_block > 3:
+            raise Exception("Last possible output block index is 3")
 
         self.blocks = nn.ModuleList()
 
@@ -251,6 +327,7 @@ def fid_inception_v3(weights_path):
 
 class FIDInceptionA(torchvision.models.inception.InceptionA):
     """InceptionA block patched for FID computation"""
+
     def __init__(self, in_channels, pool_features):
         super(FIDInceptionA, self).__init__(in_channels, pool_features)
 
@@ -276,6 +353,7 @@ class FIDInceptionA(torchvision.models.inception.InceptionA):
 
 class FIDInceptionC(torchvision.models.inception.InceptionC):
     """InceptionC block patched for FID computation"""
+
     def __init__(self, in_channels, channels_7x7):
         super(FIDInceptionC, self).__init__(in_channels, channels_7x7)
 
@@ -304,6 +382,7 @@ class FIDInceptionC(torchvision.models.inception.InceptionC):
 
 class FIDInceptionE_1(torchvision.models.inception.InceptionE):
     """First InceptionE block patched for FID computation"""
+
     def __init__(self, in_channels):
         super(FIDInceptionE_1, self).__init__(in_channels)
 
@@ -337,6 +416,7 @@ class FIDInceptionE_1(torchvision.models.inception.InceptionE):
 
 class FIDInceptionE_2(torchvision.models.inception.InceptionE):
     """Second InceptionE block patched for FID computation"""
+
     def __init__(self, in_channels):
         super(FIDInceptionE_2, self).__init__(in_channels)
 
@@ -477,10 +557,10 @@ def calculate_frechet_distance(mu1, sigma1, mu2, sigma2, eps=1e-6):
     sigma1 = np.atleast_2d(sigma1)
     sigma2 = np.atleast_2d(sigma2)
 
-    assert mu1.shape == mu2.shape, \
-        'Training and test mean vectors have different lengths'
-    assert sigma1.shape == sigma2.shape, \
-        'Training and test covariances have different dimensions'
+    if mu1.shape != mu2.shape:
+        raise Exception("Training and test mean vectors have different lengths")
+    if sigma1.shape != sigma2.shape:
+        raise Exception("Training and test covariances have different dimensions")
 
     diff = mu1 - mu2
 
@@ -576,26 +656,31 @@ def downloadFile(obs_path, local_path, result):
 
 def un_zip_real(file_name, unzip_path):
     """unzip ground truth zip file"""
-    zip_file = zipfile.ZipFile(os.path.join(unzip_path, file_name+".zip"))
+    # 安全提取
+    SafeUnZip.unzip(unzip_path, file_name+".zip")
 
-    for names in zip_file.namelist():
-        zip_file.extract(names, unzip_path)
-    zip_file.close()
     return os.path.join(unzip_path, file_name)
 
 
 def un_zip(file_name, unzip_path, result):
     """unzip zip file"""
-    zip_file = zipfile.ZipFile(os.path.join(unzip_path, file_name+".zip"))
+    # 返回绝对路径
+    file_path = SafeUnZip.checkpath(unzip_path, file_name+".zip")
+    zip_file = zipfile.ZipFile(file_path)
+    # 检查压缩文件
+    SafeUnZip.check(zip_file, file_name+".zip")
+
+    # 校验文件个数
     file_count = len(zip_file.namelist())
     if file_count != 1001 and file_count != 1000:
         result["status"] = -1
         result["msg"] = "读取失败，请确保图像数量为1000张!"
         return os.path.join(unzip_path, file_name)
     temp_name = os.path.split(zip_file.namelist()[10])[0]
-    for names in zip_file.namelist():
-        zip_file.extract(names, unzip_path)
-    zip_file.close()
+    
+    # 提取文件
+    SafeUnZip.extract(zip_file, unzip_path)
+    
     return os.path.join(unzip_path, temp_name)
 
 
@@ -603,9 +688,12 @@ def load_paths(local_path, team_file_name, team_obs_path, result):
     real_local_path = os.path.join(local_path, 'real')
     fake_local_path = os.path.join(local_path, 'fake')
 
-    downloadFile(args_opt.fid_weights_file, os.path.join(local_path, 'weights.pth'), result)
-    downloadFile(args_opt.real_result, os.path.join(real_local_path, REAL_FILE_NAME + '.zip'), result)
-    downloadFile(team_obs_path, os.path.join(fake_local_path, team_file_name + '.zip'), result)
+    downloadFile(args_opt.fid_weights_file, os.path.join(
+        local_path, 'weights.pth'), result)
+    downloadFile(args_opt.real_result, os.path.join(
+        real_local_path, REAL_FILE_NAME + '.zip'), result)
+    downloadFile(team_obs_path, os.path.join(
+        fake_local_path, team_file_name + '.zip'), result)
 
     if result['status'] != -1:
         fake_path = un_zip(team_file_name, fake_local_path, result)
@@ -624,16 +712,17 @@ def calcu_fid(local_path, team_obs_path):
     path_list = re.split('/', team_obs_path)
     team_file_name = path_list[-1].strip('.zip').strip()
 
-    real_path, fake_path = load_paths(local_path, team_file_name, team_obs_path, result)
+    real_path, fake_path = load_paths(
+        local_path, team_file_name, team_obs_path, result)
 
     if result["status"] != -1:
         paths = [real_path, fake_path]
         fid_value = calculate_fid_given_paths(paths,
-                                          batch_size=50,
-                                          device='cpu',
-                                          dims=2048,
-                                          num_workers=1,
-                                          weight_path=os.path.join(local_path, 'weights.pth'))
+                                              batch_size=50,
+                                              device='cpu',
+                                              dims=2048,
+                                              num_workers=1,
+                                              weight_path=os.path.join(local_path, 'weights.pth'))
         result["data"] = fid_value
     return result
 
@@ -653,9 +742,7 @@ if __name__ == '__main__':
     local_path = args_opt.unzip_path
     team_obs_path = args_opt.user_result
 
-
     result = calcu_fid(local_path, team_obs_path)
     if result['status'] != -1:
         del_files(local_path)
     print(result)
-
