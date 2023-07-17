@@ -7,9 +7,9 @@ import (
 	"github.com/opensourceways/xihe-grpc-protocol/grpc/competition"
 	"github.com/sirupsen/logrus"
 
-	"github.com/qinsheng99/go-py-message/app"
-	"github.com/qinsheng99/go-py-message/config"
-	"github.com/qinsheng99/go-py-message/infrastructure/message"
+	"github.com/opensourceways/xihe-script/app"
+	"github.com/opensourceways/xihe-script/config"
+	"github.com/opensourceways/xihe-script/infrastructure/message"
 )
 
 type handler struct {

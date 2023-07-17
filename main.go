@@ -11,10 +11,10 @@ import (
 	"github.com/opensourceways/community-robot-lib/logrusutil"
 	liboptions "github.com/opensourceways/community-robot-lib/options"
 	"github.com/opensourceways/xihe-grpc-protocol/grpc/client"
-	"github.com/qinsheng99/go-py-message/app"
-	"github.com/qinsheng99/go-py-message/config"
-	"github.com/qinsheng99/go-py-message/infrastructure/message"
-	"github.com/qinsheng99/go-py-message/infrastructure/score"
+	"github.com/opensourceways/xihe-script/app"
+	"github.com/opensourceways/xihe-script/config"
+	"github.com/opensourceways/xihe-script/infrastructure/message"
+	"github.com/opensourceways/xihe-script/infrastructure/score"
 	"github.com/sirupsen/logrus"
 )
 

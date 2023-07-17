@@ -3,7 +3,7 @@ package message
 import (
 	"github.com/opensourceways/community-robot-lib/kafka"
 	"github.com/opensourceways/community-robot-lib/mq"
-	"github.com/qinsheng99/go-py-message/config"
+	"github.com/opensourceways/xihe-script/config"
 	"github.com/sirupsen/logrus"
 )
 

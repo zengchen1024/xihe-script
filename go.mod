@@ -1,4 +1,4 @@
-module github.com/qinsheng99/go-py-message
+module github.com/opensourceways/xihe-script
 
 go 1.18
 

@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/qinsheng99/go-py-message/domain/score"
-	"github.com/qinsheng99/go-py-message/infrastructure/message"
+	"github.com/opensourceways/xihe-script/domain/score"
+	"github.com/opensourceways/xihe-script/infrastructure/message"
 )
 
 type calculateImpl struct {

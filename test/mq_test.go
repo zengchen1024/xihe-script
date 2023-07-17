@@ -7,7 +7,7 @@ import (
 	"github.com/opensourceways/community-robot-lib/kafka"
 	"github.com/opensourceways/community-robot-lib/mq"
 
-	"github.com/qinsheng99/go-py-message/infrastructure/message"
+	"github.com/opensourceways/xihe-script/infrastructure/message"
 )
 
 func TestMqGame(t *testing.T) {
