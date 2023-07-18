@@ -1,4 +1,5 @@
 import os
+import stat
 import pathlib
 import zipfile
 import psutil
@@ -75,7 +76,12 @@ class SafeUnZip:
                 except FileExistsError:
                     pass
             else:
-                with open(os.path.join(dest_dir, SafeUnZip.recode(file_or_path)), 'wb') as z:
+                # 设置文件读写方式（写入|文件不存在创建|文件已存在截断|二进制）
+                flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
+                # 根据具体业务的需要设置文件权限（文件所有者写|文件所有者读）
+                modes = stat.S_IWUSR | stat.S_IRUSR
+                dest_dir_path = os.path.join(dest_dir, SafeUnZip.recode(file_or_path))
+                with os.fdopen(os.open(dest_dir_path, flags, modes), 'wb') as z:
                     shutil.copyfileobj(file.open(file_or_path), z)
 
     @staticmethod
