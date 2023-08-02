@@ -26,7 +26,10 @@ ENV UPLOAD /opt/app/xihe-script/py/data/
 
 RUN pip install -r /opt/app/xihe-script/py/requirements.txt
 
-COPY --from=BUILDER /go/src/mindspore/xihe-script/xihe-script /opt/app/xihe-script
+RUN adduser mindspore -u 5000 -D
+USER mindspore
 WORKDIR /opt/app/xihe-script/
+
+COPY --from=BUILDER /go/src/mindspore/xihe-script/xihe-script /opt/app/xihe-script
 
 ENTRYPOINT ["/opt/app/xihe-script/xihe-script"]
