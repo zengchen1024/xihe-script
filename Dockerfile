@@ -19,6 +19,8 @@ ENV EVALUATE /opt/app/xihe-script/py/evaluate.py
 ENV CALCULATE /opt/app/xihe-script/py/calculate_fid.py
 ENV UPLOAD /opt/app/xihe-script/py/data/
 
+RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+
 RUN pip install -r /opt/app/xihe-script/py/requirements.txt
 
 
