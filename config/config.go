@@ -1,12 +1,14 @@
 package config
 
 import (
+	"os"
 	"regexp"
 	"strings"
 
+	"sigs.k8s.io/yaml"
+
 	"github.com/opensourceways/community-robot-lib/mq"
 	"github.com/opensourceways/community-robot-lib/utils"
-	xiheutils "github.com/opensourceways/xihe-server/utils"
 )
 
 var reIpPort = regexp.MustCompile(`^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}:[1-9]\d*$`)
@@ -122,8 +124,17 @@ type Topics struct {
 	Match string `json:"submission"       required:"true"`
 }
 
+func LoadFromYaml(path string, cfg interface{}) error {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+
+	return yaml.Unmarshal(b, cfg)
+}
+
 func LoadConfig(path string, cfg interface{}) error {
-	if err := xiheutils.LoadFromYaml(path, cfg); err != nil {
+	if err := LoadFromYaml(path, cfg); err != nil {
 		return err
 	}
 
