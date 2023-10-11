@@ -497,13 +497,9 @@ def get_activations(files, model, batch_size=50, dims=2048, device='cpu',
        query tensor.
     """
     model.eval()
-    # print("start evaluate")
 
     if batch_size > len(files):
-        # print(('Warning: batch size is bigger than the data size. '
-        #        'Setting batch size to data size'))
         batch_size = len(files)
-    # print(batch_size)
     dataset = ImagePathDataset(files, transforms=TF.ToTensor())
     dataloader = torch.utils.data.DataLoader(dataset,
                                              batch_size=batch_size,
@@ -575,7 +571,6 @@ def calculate_frechet_distance(mu1, sigma1, mu2, sigma2, eps=1e-6):
     if not np.isfinite(covmean).all():
         msg = ('fid calculation produces singular product; '
                'adding %s to diagonal of cov estimates') % eps
-        # print(msg)
         offset = np.eye(sigma1.shape[0]) * eps
         covmean = linalg.sqrtm((sigma1 + offset).dot(sigma2 + offset))
 
@@ -738,7 +733,6 @@ def del_files(local_path):
     shutil.rmtree(fake_local_path)
     real_local_path = os.path.join(local_path, 'real')
     shutil.rmtree(real_local_path)
-    # print('already deleted!')
 
 
 args_opt = parse_args()
