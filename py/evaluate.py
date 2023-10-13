@@ -31,7 +31,6 @@ def evaluate4cls(pred_path, y_true_path, cls, pos=1):
     if len(y_pred) != len(y_true):
         return {
             "status": -1,
-#             "metrics": None,
             "msg": "评估失败，结果长度不一致"
         }
     ec = Evaluation4Classfication(y_pred, y_true, cls=cls, pos=pos)
@@ -131,9 +130,5 @@ if __name__ == "__main__":
     y_true_path = args_opt.true_path
     cls = args_opt.cls
     pos = args_opt.pos
-    # y_pred_path = "xihe-obj/competitions/昇思AI挑战赛-多类别图像分类/submit_result/s9qfqri3zpc8j2x7_1/result_example_5120-2022-8-8-15-3-16.txt"
-    #
-    # cls = 256
-    # pos = 1
     res = evaluate4cls(y_pred_path, y_true_path, cls, pos=1)
     print(res)
