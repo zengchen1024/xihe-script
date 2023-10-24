@@ -17,8 +17,22 @@ type Configuration struct {
 	MaxRetry int            `json:"max_retry" required:"true"`
 }
 
+func (cfg *Configuration) validate() error {
+	if err := utils.CheckConfig(cfg, ""); err != nil {
+		return err
+	}
+
+	return cfg.Message.Validate()
+}
+
+func (cfg *Configuration) setDefault() {
+	if cfg.MaxRetry <= 0 {
+		cfg.MaxRetry = 10
+	}
+}
+
 type Match struct {
-	Id                        string `json:"competition_id" required:"true"`
+	Id                        string `json:"competition_id"                required:"true"`
 	AnswerFinalPath           string `json:"answer_final_path"`
 	AnswerPreliminaryPath     string `json:"answer_preliminary_path"`
 	FidWeightsFinalPath       string `json:"fid_weights_final_path"`
@@ -81,20 +95,6 @@ func (cfg *Configuration) GetMatch(id string) *Match {
 	return nil
 }
 
-func (cfg *Configuration) Validate() error {
-	if err := utils.CheckConfig(cfg, ""); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (cfg *Configuration) SetDefault() {
-	if cfg.MaxRetry <= 0 {
-		cfg.MaxRetry = 10
-	}
-}
-
 func loadFromYaml(path string, cfg interface{}) error {
 	b, err := os.ReadFile(path)
 	if err != nil {
@@ -109,15 +109,7 @@ func LoadConfig(path string, cfg *Configuration) error {
 		return err
 	}
 
-	cfg.SetDefault()
+	cfg.setDefault()
 
-	return cfg.Validate()
-}
-
-type validate interface {
-	Validate() error
-}
-
-type setDefault interface {
-	SetDefault()
+	return cfg.validate()
 }

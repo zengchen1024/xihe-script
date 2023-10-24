@@ -3,7 +3,6 @@ module github.com/opensourceways/xihe-script
 go 1.18
 
 require (
-	github.com/opensourceways/community-robot-lib v0.0.0-20230111083119-2d2c0df320bb
 	github.com/opensourceways/kafka-lib v0.0.0-20231023142428-b41c4ff141c6
 	github.com/opensourceways/server-common-lib v0.0.0-20231016134644-4bd7efe825a9
 	github.com/opensourceways/xihe-grpc-protocol v0.0.0-20230915024045-ad233b63c099
@@ -13,7 +12,6 @@ require (
 
 require (
 	github.com/IBM/sarama v1.41.0 // indirect
-	github.com/Shopify/sarama v1.33.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/eapache/go-resiliency v1.4.0 // indirect
 	github.com/eapache/go-xerial-snappy v0.0.0-20230731223053-c322873962e3 // indirect
@@ -30,7 +28,6 @@ require (
 	github.com/jcmturner/gokrb5/v8 v8.4.4 // indirect
 	github.com/jcmturner/rpc/v2 v2.0.3 // indirect
 	github.com/klauspost/compress v1.16.7 // indirect
-	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
 	github.com/pierrec/lz4/v4 v4.1.18 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect

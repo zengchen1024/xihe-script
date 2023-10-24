@@ -12,7 +12,7 @@ import (
 	"github.com/opensourceways/xihe-script/infrastructure/message"
 )
 
-type matchImpl interface {
+type matchInterface interface {
 	GetMatch(id string) *config.Match
 }
 
@@ -21,7 +21,7 @@ type handler struct {
 	maxRetry  int
 	evaluate  app.EvaluateService
 	calculate app.CalculateService
-	match     matchImpl
+	match     matchInterface
 	cli       *client.CompetitionClient
 }
 
@@ -80,12 +80,11 @@ func (h *handler) Evaluate(eval *message.MatchMessage, match *message.MatchField
 }
 
 func (h *handler) GetMatch(id string) message.MatchFieldImpl {
-	v := h.match.GetMatch(id)
-	if v == nil {
-		return nil
+	if v := h.match.GetMatch(id); v != nil {
+		return v
 	}
 
-	return v
+	return nil
 }
 
 func (h *handler) handlerCompetition(m handlerMessage) {

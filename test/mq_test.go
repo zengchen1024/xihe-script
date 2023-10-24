@@ -4,22 +4,22 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/opensourceways/community-robot-lib/kafka"
-	"github.com/opensourceways/community-robot-lib/mq"
+	kafka "github.com/opensourceways/kafka-lib/agent"
+	"github.com/opensourceways/kafka-lib/mq"
 
 	"github.com/opensourceways/xihe-script/infrastructure/message"
 )
 
 func TestMqGame(t *testing.T) {
-	err := kafka.Init()
+	err := kafka.Init(
+		&kafka.Config{Address: "127.0.0.1:9092"},
+		mq.NewLogger(), nil, "", true,
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = kafka.Connect()
-	if err != nil {
-		t.Fatal(err)
-	}
+	defer kafka.Exit()
 
 	data1 := message.MatchMessage{
 		CompetitionId: "1",
@@ -71,32 +71,22 @@ func TestMqGame(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	msg1 := mq.Message{Body: bys1}
-	msg2 := mq.Message{Body: bys2}
-	msg3 := mq.Message{Body: bys3}
-	msg4 := mq.Message{Body: bys4}
-
-	err = kafka.Publish("xihe_submission_new", &msg1)
+	err = kafka.Publish("xihe_submission_new", nil, bys1)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = kafka.Publish("xihe_submission_new", &msg3)
+	err = kafka.Publish("xihe_submission_new", nil, bys3)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = kafka.Publish("xihe_submission_new", &msg2)
+	err = kafka.Publish("xihe_submission_new", nil, bys2)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = kafka.Publish("xihe_submission_new", &msg4)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = kafka.Disconnect()
+	err = kafka.Publish("xihe_submission_new", nil, bys4)
 	if err != nil {
 		t.Fatal(err)
 	}
