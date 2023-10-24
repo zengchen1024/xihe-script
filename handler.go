@@ -12,12 +12,16 @@ import (
 	"github.com/opensourceways/xihe-script/infrastructure/message"
 )
 
+type matchImpl interface {
+	GetMatch(id string) *config.Match
+}
+
 type handler struct {
 	log       *logrus.Entry
 	maxRetry  int
 	evaluate  app.EvaluateService
 	calculate app.CalculateService
-	match     config.MatchImpl
+	match     matchImpl
 	cli       *client.CompetitionClient
 }
 
@@ -76,7 +80,12 @@ func (h *handler) Evaluate(eval *message.MatchMessage, match *message.MatchField
 }
 
 func (h *handler) GetMatch(id string) message.MatchFieldImpl {
-	return h.match.GetMatch(id)
+	v := h.match.GetMatch(id)
+	if v == nil {
+		return nil
+	}
+
+	return v
 }
 
 func (h *handler) handlerCompetition(m handlerMessage) {

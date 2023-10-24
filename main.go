@@ -8,14 +8,15 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/opensourceways/community-robot-lib/logrusutil"
-	liboptions "github.com/opensourceways/community-robot-lib/options"
+	"github.com/opensourceways/server-common-lib/logrusutil"
+	liboptions "github.com/opensourceways/server-common-lib/options"
 	"github.com/opensourceways/xihe-grpc-protocol/grpc/client"
+	"github.com/sirupsen/logrus"
+
 	"github.com/opensourceways/xihe-script/app"
 	"github.com/opensourceways/xihe-script/config"
 	"github.com/opensourceways/xihe-script/infrastructure/message"
 	"github.com/opensourceways/xihe-script/infrastructure/score"
-	"github.com/sirupsen/logrus"
 )
 
 type options struct {
@@ -45,7 +46,7 @@ func gatherOptions(fs *flag.FlagSet, args ...string) (options, error) {
 func main() {
 	logrusutil.ComponentInit("xihe")
 	log := logrus.NewEntry(logrus.StandardLogger())
-	
+
 	o, err := gatherOptions(
 		flag.NewFlagSet(os.Args[0], flag.ExitOnError),
 		os.Args[1:]...,
@@ -57,7 +58,7 @@ func main() {
 	if err := o.Validate(); err != nil {
 		logrus.Fatalf("Invalid options, err:%s", err.Error())
 	}
-	logrus.SetLevel(logrus.DebugLevel)
+
 	if o.enableDebug {
 		logrus.SetLevel(logrus.DebugLevel)
 		logrus.Debug("debug enabled.")
@@ -72,35 +73,30 @@ func main() {
 		logrus.Fatalf("config file delete failed, err:%s", err.Error())
 	}
 
-	if err := message.Init(cfg.GetMQConfig(), log, cfg.MQ.Topics); err != nil {
-		log.Fatalf("initialize mq failed, err:%v", err)
-	}
-
-	defer message.Exit(log)
-
-	run(newHandler(cfg, log), log)
-}
-func newHandler(cfg *config.Configuration, log *logrus.Entry) *handler {
-	competitionClient, err := client.NewCompetitionClient(cfg.Endpoint)
+	cli, err := client.NewCompetitionClient(cfg.Endpoint)
 	if err != nil {
 		logrus.Errorf("init rpc server err: %v", err)
-		return nil
+
+		return
 	}
+
+	defer cli.Disconnect()
+
+	run(newHandler(cfg, cli, log), &cfg.Message, log)
+}
+
+func newHandler(cfg *config.Configuration, cli *client.CompetitionClient, log *logrus.Entry) *handler {
 	return &handler{
 		maxRetry:  cfg.MaxRetry,
 		log:       log,
 		calculate: app.NewCalculateService(score.NewCalculateScore(os.Getenv("CALCULATE"))),
 		evaluate:  app.NewEvaluateService(score.NewEvaluateScore(os.Getenv("EVALUATE"))),
 		match:     cfg,
-		cli:       competitionClient,
+		cli:       cli,
 	}
 }
 
-func run(h *handler, log *logrus.Entry) {
-	if h == nil {
-		return
-	}
-	defer h.cli.Disconnect()
+func run(h *handler, cfg *message.Config, log *logrus.Entry) {
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
 
@@ -135,7 +131,7 @@ func run(h *handler, log *logrus.Entry) {
 		}
 	}(ctx)
 
-	if err := message.Subscribe(ctx, h, log); err != nil {
+	if err := message.Subscribe(ctx, h, cfg, log); err != nil {
 		log.Errorf("subscribe failed, err:%v", err)
 	}
 }

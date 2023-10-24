@@ -22,6 +22,7 @@ type ScoreRes struct {
 	Data    float32 `json:"data"`
 	Metrics metrics `json:"metrics,omitempty"`
 }
+
 type metrics struct {
 	Ap   float32 `json:"ap,omitempty"`
 	Ar   float32 `json:"ar,omitempty"`
